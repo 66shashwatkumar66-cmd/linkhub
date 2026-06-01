@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3DBYSD – Turning Ideas Into Reality</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --copper:#B87333;--copper-light:#FFB87A;--copper-dark:#6B3F1A;
+    --copper-mid:#d4926a;--bg:#0D0A08;--white:#FFFFFF;
+    --card-bg:rgba(184,115,51,0.05);--card-border:rgba(184,115,51,0.2);
+    --glow-copper:rgba(184,115,51,0.4);--glow-warm:rgba(255,184,122,0.25);
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--white);
+    font-family:'Exo 2',sans-serif;overflow-x:hidden;
+    cursor:none;
+  }
+  /* CUSTOM CURSOR */
+  #cursor{position:fixed;width:12px;height:12px;background:var(--copper-light);border-radius:50%;pointer-events:none;z-index:9999;transition:transform .1s;mix-blend-mode:screen}
+  #cursor-ring{position:fixed;width:40px;height:40px;border:1.5px solid var(--copper);border-radius:50%;pointer-events:none;z-index:9998;transition:all .15s ease;mix-blend-mode:screen}
+  /* LOADING SCREEN */
+  #loader{position:fixed;inset:0;background:var(--bg);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+  .loader-logo{font-family:'Exo 2',sans-serif;font-size:clamp(48px,10vw,96px);font-weight:900;letter-spacing:-2px;background:linear-gradient(135deg,var(--copper-light),var(--copper),var(--copper-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:0;animation:logoReveal 0.5s ease forwards}
+  @keyframes logoReveal{to{opacity:1}}
+  .loader-bar-wrap{width:260px;height:3px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+  .loader-bar{height:100%;width:0;background:linear-gradient(90deg,var(--copper-dark),var(--copper),var(--copper-light));border-radius:99px;animation:loadBar 2.2s ease forwards}
+  @keyframes loadBar{to{width:100%}}
+  .loader-text{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--copper-light);opacity:.7;letter-spacing:3px;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.3}}
+  .loader-layers{display:flex;gap:4px;align-items:flex-end}
+  .layer{width:32px;background:linear-gradient(180deg,var(--copper-light),var(--copper-dark));border-radius:3px 3px 0 0;animation:layerGrow 0.3s ease forwards;opacity:0}
+  .layer:nth-child(1){height:8px;animation-delay:.4s}
+  .layer:nth-child(2){height:16px;animation-delay:.6s}
+  .layer:nth-child(3){height:24px;animation-delay:.8s}
+  .layer:nth-child(4){height:32px;animation-delay:1s}
+  .layer:nth-child(5){height:40px;animation-delay:1.2s}
+  .layer:nth-child(6){height:48px;animation-delay:1.4s}
+  @keyframes layerGrow{to{opacity:1;transform:translateY(0)}}
+  /* CANVAS */
+  #particles-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  /* GRID BG */
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(184,115,51,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(184,115,51,.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at 50% 50%,black 30%,transparent 80%)}
+  /* MOUSE GLOW */
+  #mouse-glow{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,rgba(184,115,51,.08) 0%,transparent 70%);transform:translate(-50%,-50%);transition:left .2s ease,top .2s ease}
+  /* MAIN */
+  main{position:relative;z-index:2;max-width:680px;margin:0 auto;padding:0 20px 80px}
+  /* HERO */
+  .hero{text-align:center;padding:80px 0 48px;position:relative}
+  .hero-badge{display:inline-block;padding:6px 18px;border:1px solid rgba(184,115,51,.35);border-radius:99px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--copper-light);margin-bottom:28px;background:rgba(184,115,51,.07)}
+  .hero-logo{font-family:'Exo 2',sans-serif;font-size:clamp(56px,14vw,112px);font-weight:900;letter-spacing:-4px;line-height:.9;background:linear-gradient(135deg,var(--copper-light) 0%,var(--copper) 50%,var(--copper-dark) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 40px rgba(184,115,51,.5));animation:heroFloat 6s ease-in-out infinite}
+  @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .hero-sub{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,3.5vw,18px);letter-spacing:2px;color:rgba(255,255,255,.5);margin:18px 0 10px;text-transform:uppercase}
+  .hero-headline{font-size:clamp(28px,6vw,48px);font-weight:700;line-height:1.1;margin-bottom:12px;background:linear-gradient(135deg,#fff 50%,var(--copper-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero-desc{font-family:'Rajdhani',sans-serif;font-size:clamp(13px,3vw,16px);color:rgba(255,255,255,.45);letter-spacing:1.5px;line-height:1.8;max-width:480px;margin:0 auto}
+  .hero-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px}
+  .hero-tag{padding:5px 14px;border-radius:99px;font-size:12px;letter-spacing:1px;font-family:'Rajdhani',sans-serif;font-weight:600;border:1px solid}
+  .hero-tag:nth-child(1){color:var(--copper-light);border-color:rgba(255,184,122,.35);background:rgba(255,184,122,.07)}
+  .hero-tag:nth-child(2){color:var(--copper);border-color:rgba(184,115,51,.35);background:rgba(184,115,51,.08)}
+  .hero-tag:nth-child(3){color:#e8c49a;border-color:rgba(232,196,154,.3);background:rgba(232,196,154,.06)}
+  .hero-tag:nth-child(4){color:#c9916a;border-color:rgba(201,145,106,.3);background:rgba(201,145,106,.07)}
+  /* SECTION TITLES */
+  .section-title{text-align:center;margin-bottom:32px}
+  .section-title h2{font-family:'Exo 2',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:700;background:linear-gradient(90deg,var(--copper-light),var(--copper));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .section-title p{color:rgba(255,255,255,.4);font-size:14px;letter-spacing:2px;font-family:'Share Tech Mono',monospace}
+  /* DIVIDER */
+  .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(184,115,51,.3),transparent);margin:48px 0}
+  /* LINKS */
+  .links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .link-card{
+    display:flex;align-items:center;gap:16px;padding:16px 20px;
+    background:var(--card-bg);border:1px solid var(--card-border);
+    border-radius:16px;text-decoration:none;color:var(--white);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:all .3s ease;position:relative;overflow:hidden;
+    animation:cardFloat 4s ease-in-out infinite;
+  }
+  .link-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(184,115,51,.1),transparent 50%,rgba(107,63,26,.06));opacity:0;transition:opacity .3s}
+  .link-card::after{content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:linear-gradient(105deg,transparent,rgba(255,184,122,.07),transparent);transform:skewX(-20deg);transition:left .5s ease;pointer-events:none}
+  .link-card:hover{transform:translateY(-4px) scale(1.01);border-color:rgba(184,115,51,.55);box-shadow:0 0 32px rgba(184,115,51,.2),0 8px 32px rgba(0,0,0,.5)}
+  .link-card:hover::before{opacity:1}
+  .link-card:hover::after{left:120%}
+  @keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  .link-card:nth-child(1){animation-delay:0s}
+  .link-card:nth-child(2){animation-delay:.4s}
+  .link-card:nth-child(3){animation-delay:.8s}
+  .link-card:nth-child(4){animation-delay:1.2s}
+  .link-card:nth-child(5){animation-delay:1.6s}
+  .link-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;position:relative}
+  .link-info{flex:1}
+  .link-name{font-weight:700;font-size:15px;font-family:'Rajdhani',sans-serif;letter-spacing:.5px}
+  .link-desc{font-size:12px;color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace;margin-top:2px}
+  .link-arrow{font-size:18px;opacity:.4;transition:all .3s;flex-shrink:0}
+  .link-card:hover .link-arrow{opacity:1;transform:translateX(4px)}
+  /* ICON COLORS */
+  .ig-icon{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);box-shadow:0 0 16px rgba(225,48,108,.3)}
+  .wa-icon{background:linear-gradient(135deg,#25d366,#128c7e);box-shadow:0 0 16px rgba(37,211,102,.3)}
+  .web-icon{background:linear-gradient(135deg,var(--copper-light),var(--copper-dark));box-shadow:0 0 16px rgba(184,115,51,.35)}
+  .yt-icon{background:linear-gradient(135deg,#ff0000,#cc0000);box-shadow:0 0 16px rgba(255,0,0,.3)}
+  /* PROJECTS */
+  .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .project-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:20px 14px;text-align:center;backdrop-filter:blur(12px);transition:all .3s ease;cursor:default}
+  .project-card:hover{transform:translateY(-6px);border-color:rgba(184,115,51,.5);box-shadow:0 0 24px rgba(184,115,51,.15)}
+  .project-emoji{font-size:32px;display:block;margin-bottom:10px;filter:drop-shadow(0 0 8px rgba(184,115,51,.4))}
+  .project-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--white);margin-bottom:4px}
+  .project-tag{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--copper-light);opacity:.7;letter-spacing:1px}
+  /* WHY CHOOSE */
+  .why-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .why-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:22px 16px;text-align:center;backdrop-filter:blur(12px);transition:all .35s ease;position:relative;overflow:hidden}
+  .why-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--copper-dark),var(--copper),var(--copper-light));transform:scaleX(0);transition:transform .4s ease}
+  .why-card:hover::before{transform:scaleX(1)}
+  .why-card:hover{transform:translateY(-5px);box-shadow:0 12px 40px rgba(184,115,51,.14)}
+  .why-icon{font-size:28px;margin-bottom:10px;filter:drop-shadow(0 0 6px rgba(255,184,122,.5))}
+  .why-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--white);margin-bottom:5px}
+  .why-body{font-size:11px;color:rgba(255,255,255,.4);line-height:1.5}
+  /* REVIEWS */
+  .reviews-wrap{overflow:hidden;position:relative}
+  .reviews-track{display:flex;gap:16px;animation:scroll 28s linear infinite}
+  .reviews-track:hover{animation-play-state:paused}
+  @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  .review-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:20px;min-width:260px;backdrop-filter:blur(12px);flex-shrink:0}
+  .review-stars{color:var(--copper-light);font-size:14px;letter-spacing:2px;margin-bottom:10px}
+  .review-text{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:14px;font-style:italic}
+  .review-author{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;color:var(--copper-light)}
+  .review-role{font-size:11px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace}
+  /* FOOTER */
+  footer{text-align:center;padding:32px 20px;border-top:1px solid rgba(184,115,51,.1)}
+  footer p{font-family:'Share Tech Mono',monospace;font-size:12px;color:rgba(255,255,255,.25);letter-spacing:2px}
+  footer span{color:var(--copper-light)}
+  /* FLOATING SHAPES */
+  .shape{position:fixed;border-radius:50%;pointer-events:none;z-index:0;opacity:.4}
+  .s1{width:320px;height:320px;background:radial-gradient(circle,rgba(184,115,51,.08),transparent 70%);top:10%;left:-10%;animation:drift1 18s ease-in-out infinite}
+  .s2{width:260px;height:260px;background:radial-gradient(circle,rgba(107,63,26,.12),transparent 70%);top:40%;right:-8%;animation:drift2 22s ease-in-out infinite}
+  .s3{width:180px;height:180px;background:radial-gradient(circle,rgba(255,184,122,.06),transparent 70%);bottom:20%;left:20%;animation:drift3 16s ease-in-out infinite}
+  @keyframes drift1{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(30px,40px) rotate(180deg)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,30px)}}
+  @keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-30px) scale(1.15)}}
+  /* FADE IN SECTIONS */
+  .fade-in{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+  .fade-in.visible{opacity:1;transform:translateY(0)}
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(var(--copper-light),var(--copper-dark));border-radius:99px}
+  /* PRINTER ICON SPIN */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin-gear{display:inline-block;animation:spin 4s linear infinite;font-size:14px;opacity:.6}
+  /* RESPONSIVE */
+  @media(max-width:500px){
+    .links-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- Mouse glow -->
+<div id="mouse-glow"></div>
+
+<!-- Grid & shapes -->
+<div class="grid-bg"></div>
+<div class="shape s1"></div>
+<div class="shape s2"></div>
+<div class="shape s3"></div>
+
+<!-- Particles canvas -->
+<canvas id="particles-canvas"></canvas>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">3DBYSD</div>
+  <div class="loader-layers">
+    <div class="layer"></div>
+    <div class="layer"></div>
+    <div class="layer"></div>
+    <div class="layer"></div>
+    <div class="layer"></div>
+    <div class="layer"></div>
+  </div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-text">PRINTING YOUR EXPERIENCE...</div>
+</div>
+
+<main id="main-content" style="opacity:0;transition:opacity .6s ease">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge"><span class="spin-gear">⚙</span> &nbsp;IIT STUDENT MAKER · LUCKNOW&nbsp; <span class="spin-gear">⚙</span></div>
+    <div class="hero-logo">3D<br>BYSD</div>
+    <p class="hero-sub">Turning Ideas Into Reality</p>
+    <h1 class="hero-headline">Where Imagination<br>Gets Printed</h1>
+    <p class="hero-desc">Custom 3D Printing · NFC Products · Brand Merchandise · Product Prototyping</p>
+    <div class="hero-tags">
+      <span class="hero-tag">3D Printing</span>
+      <span class="hero-tag">NFC Cards</span>
+      <span class="hero-tag">Merch Design</span>
+      <span class="hero-tag">Prototyping</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- LINKS -->
+  <section class="fade-in">
+    <div class="section-title">
+      <h2>Connect With Me</h2>
+      <p>// FIND ME EVERYWHERE</p>
+    </div>
+    <div class="links-grid">
+      <a href="https://www.instagram.com/3dbysd.in?igsh=MTVsZzc3cTVzdzY0Mw==" class="link-card" target="_blank">
+        <div class="link-icon ig-icon">📸</div>
+        <div class="link-info">
+          <div class="link-name">Instagram</div>
+          <div class="link-desc">@3dbysd.in · Daily builds</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+      <a href="https://wa.me/919918719991" class="link-card" target="_blank">
+        <div class="link-icon wa-icon">💬</div>
+        <div class="link-info">
+          <div class="link-name">WhatsApp Chat</div>
+          <div class="link-desc">Order · Inquire · Chat directly</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+      <a href="https://whatsapp.com/channel/0029VbD6gmL47XeBVgFC1b39" class="link-card" target="_blank">
+        <div class="link-icon wa-icon" style="background:linear-gradient(135deg,#1da851,#0e6b3c);box-shadow:0 0 16px rgba(29,168,81,.3)">📢</div>
+        <div class="link-info">
+          <div class="link-name">WhatsApp Channel</div>
+          <div class="link-desc">Updates · Drops · Offers</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+      <a href="https://youtube.com/@3dbysd?si=4QKO239VZkKSbho3" class="link-card" target="_blank">
+        <div class="link-icon yt-icon">▶️</div>
+        <div class="link-info">
+          <div class="link-name">YouTube</div>
+          <div class="link-desc">Tutorials · Build timelapses</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+      <a href="https://3dbysd.in/" class="link-card" target="_blank">
+        <div class="link-icon web-icon">🌐</div>
+        <div class="link-info">
+          <div class="link-name">Website</div>
+          <div class="link-desc">3dbysd.in · Portfolio & store</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </a>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PROJECTS -->
+  <section class="fade-in">
+    <div class="section-title">
+      <h2>Featured Creations</h2>
+      <p>// THINGS WE'VE BUILT</p>
+    </div>
+    <div class="projects-grid">
+      <div class="project-card">
+        <span class="project-emoji">🔑</span>
+        <div class="project-name">Custom Keychains</div>
+        <div class="project-tag">PERSONALIZED</div>
+      </div>
+      <div class="project-card">
+        <span class="project-emoji">📇</span>
+        <div class="project-name">NFC Business Cards</div>
+        <div class="project-tag">SMART CARDS</div>
+      </div>
+      <div class="project-card">
+        <span class="project-emoji">👕</span>
+        <div class="project-name">Brand Merch</div>
+        <div class="project-tag">MERCHANDISE</div>
+      </div>
+      <div class="project-card">
+        <span class="project-emoji">🧩</span>
+        <div class="project-name">Prototypes</div>
+        <div class="project-tag">RAPID PROTO</div>
+      </div>
+
+      <div class="project-card">
+        <span class="project-emoji">📦</span>
+        <div class="project-name">Packaging Inserts</div>
+        <div class="project-tag">PACKAGING</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- WHY CHOOSE -->
+  <section class="fade-in">
+    <div class="section-title">
+      <h2>Why Choose 3DBYSD?</h2>
+      <p>// THE EDGE WE BRING</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">⚡</div>
+        <div class="why-title">Fast Prototyping</div>
+        <div class="why-body">24–48 hr turnarounds on most orders</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🎨</div>
+        <div class="why-title">Custom Design</div>
+        <div class="why-body">From sketch to 3D model, we handle it</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">💎</div>
+        <div class="why-title">Premium Quality</div>
+        <div class="why-body">High-resolution PLA, PETG & resin prints</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🚀</div>
+        <div class="why-title">Startup Friendly</div>
+        <div class="why-body">Student & startup pricing tiers</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">📦</div>
+        <div class="why-title">Bulk Orders</div>
+        <div class="why-body">Scale from 1 to 1000+ units</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🎓</div>
+        <div class="why-title">IIT Expertise</div>
+        <div class="why-body">Engineering-grade precision & design</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- REVIEWS -->
+  <section class="fade-in">
+    <div class="section-title">
+      <h2>What People Say</h2>
+      <p>// CUSTOMER REVIEWS</p>
+    </div>
+    <div class="reviews-wrap">
+      <div class="reviews-track">
+        <!-- Set 1 -->
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Got my brand keychains in under 2 days. Quality is insane for the price. Will definitely order again!"</div>
+          <div class="review-author">Aryan Mehta</div>
+          <div class="review-role">Startup Founder · Delhi</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"The NFC business cards are a conversation starter at every event. Everyone asks where I got them."</div>
+          <div class="review-author">Priya Sharma</div>
+          <div class="review-role">Marketing Head · Bangalore</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Fastest prototype delivery I've experienced. SD really understood the brief without multiple revisions."</div>
+          <div class="review-author">Rohan Verma</div>
+          <div class="review-role">Product Designer · Mumbai</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Ordered custom merch for our college fest. 200 units, perfect quality, delivered on time. Legend!"</div>
+          <div class="review-author">Nisha Gupta</div>
+          <div class="review-role">Events Head · IIT Kanpur</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Super responsive, very creative, and the 3D prints are genuinely premium. My go-to for all merch."</div>
+          <div class="review-author">Aarav Singh</div>
+          <div class="review-role">Freelance Creator · Lucknow</div>
+        </div>
+        <!-- Duplicate for seamless scroll -->
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Got my brand keychains in under 2 days. Quality is insane for the price. Will definitely order again!"</div>
+          <div class="review-author">Aryan Mehta</div>
+          <div class="review-role">Startup Founder · Delhi</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"The NFC business cards are a conversation starter at every event. Everyone asks where I got them."</div>
+          <div class="review-author">Priya Sharma</div>
+          <div class="review-role">Marketing Head · Bangalore</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Fastest prototype delivery I've experienced. SD really understood the brief without multiple revisions."</div>
+          <div class="review-author">Rohan Verma</div>
+          <div class="review-role">Product Designer · Mumbai</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Ordered custom merch for our college fest. 200 units, perfect quality, delivered on time. Legend!"</div>
+          <div class="review-author">Nisha Gupta</div>
+          <div class="review-role">Events Head · IIT Kanpur</div>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <div class="review-text">"Super responsive, very creative, and the 3D prints are genuinely premium. My go-to for all merch."</div>
+          <div class="review-author">Aarav Singh</div>
+          <div class="review-role">Freelance Creator · Lucknow</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+</main>
+
+<footer>
+  <p>Made with <span>♥</span> & filament by <span>3DBYSD</span> · Lucknow, India · 2025</p>
+  <p style="margin-top:8px;font-size:10px">Turning Ideas Into Reality, One Layer at a Time</p>
+</footer>
+
+<script>
+// ── LOADER ──────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const l=document.getElementById('loader');
+    const m=document.getElementById('main-content');
+    l.style.transition='opacity .6s ease';
+    l.style.opacity='0';
+    setTimeout(()=>{l.style.display='none';m.style.opacity='1'},600);
+  },2600);
+});
+
+// ── CURSOR ──────────────────────────────────────────────────────
+const cur=document.getElementById('cursor');
+const ring=document.getElementById('cursor-ring');
+const glow=document.getElementById('mouse-glow');
+document.addEventListener('mousemove',e=>{
+  cur.style.left=e.clientX-6+'px';
+  cur.style.top=e.clientY-6+'px';
+  ring.style.left=e.clientX-20+'px';
+  ring.style.top=e.clientY-20+'px';
+  glow.style.left=e.clientX+'px';
+  glow.style.top=e.clientY+'px';
+});
+document.querySelectorAll('a,.link-card,.project-card,.why-card,.contact-btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{
+    cur.style.transform='scale(2)';
+    ring.style.transform='scale(1.4)';
+    ring.style.borderColor='rgba(255,184,122,.7)';
+  });
+  el.addEventListener('mouseleave',()=>{
+    cur.style.transform='scale(1)';
+    ring.style.transform='scale(1)';
+    ring.style.borderColor='rgba(0,191,255,0.5)';
+  });
+});
+
+// ── PARTICLES ───────────────────────────────────────────────────
+const canvas=document.getElementById('particles-canvas');
+const ctx=canvas.getContext('2d');
+let W,H,particles=[],mouse={x:-1000,y:-1000};
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+resize();
+window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+const COLORS=['rgba(0,191,255,','rgba(138,43,226,','rgba(0,255,255,'];
+class P{
+  constructor(){this.reset()}
+  reset(){
+    this.x=Math.random()*W;this.y=Math.random()*H;
+    this.size=Math.random()*2+.5;this.speedX=(Math.random()-.5)*.5;
+    this.speedY=(Math.random()-.5)*.5;this.life=Math.random();
+    this.col=COLORS[Math.floor(Math.random()*3)];this.alpha=Math.random()*.6+.1
+  }
+  draw(){
+    const dx=this.x-mouse.x,dy=this.y-mouse.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<120){const f=((120-d)/120);this.x+=dx*f*.03;this.y+=dy*f*.03}
+    ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fillStyle=this.col+this.alpha+')';ctx.fill();
+    this.x+=this.speedX;this.y+=this.speedY;
+    if(this.x<0||this.x>W||this.y<0||this.y>H)this.reset();
+  }
+}
+for(let i=0;i<80;i++)particles.push(new P());
+function animate(){ctx.clearRect(0,0,W,H);particles.forEach(p=>p.draw());requestAnimationFrame(animate)}
+animate();
+
+// ── FADE IN ON SCROLL ────────────────────────────────────────────
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:.12});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
